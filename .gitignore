@@ -24,3 +24,5 @@ backend/log
 backend/deploy.db
 backend/gen.json
 backend/.idea
+backend/tmp
+backend/main

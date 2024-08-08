@@ -99,6 +99,7 @@ func (u *UserController) SignIn(ctx *fw.Context, db *gorm.DB, req *SignInRequest
 	}
 	if user.Password == req.Password {
 		user.LastLoginTime = time.Now()
+		user.LastLoginIp = ctx.RemoteIP()
 		db.Save(&user)
 		u.SetAuthed(s, map[string]any{
 			"user_id":   user.ID,

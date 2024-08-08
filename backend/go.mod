@@ -14,7 +14,10 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/linxlib/conv v1.1.1
 	github.com/linxlib/fw v0.0.0-00010101000000-000000000000
+	github.com/otiai10/copy v1.14.0
+	github.com/saracen/fastzip v0.1.11
 	github.com/sirupsen/logrus v1.9.3
+	github.com/tombuildsstuff/golang-iis v0.0.0-20181108203908-81205ad1ef60
 	github.com/valyala/fasthttp v1.55.0
 	gorm.io/gorm v1.25.11
 )
@@ -54,11 +57,13 @@ require (
 	github.com/redis/go-redis/v9 v9.5.3 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
+	github.com/saracen/zipextra v0.0.0-20220303013732-0187cb0159ea // indirect
 	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/tinylib/msgp v1.2.0 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
