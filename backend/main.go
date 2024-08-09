@@ -14,6 +14,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// @Title Test Overwrite Title
+// @Version v0.0.0
+
 //go:generate go run github.com/linxlib/astp/astpg -o gen.json
 func main() {
 	s := fw.New()
