@@ -71,7 +71,7 @@ func (s *Service) CheckExistColumns() map[string]any {
 }
 
 func (s *Service) Stop() bool {
-	return false
+	return true
 }
 func (s *Service) Status() ServiceStatus {
 	switch s.ServiceType {

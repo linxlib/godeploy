@@ -127,7 +127,7 @@ func (u *UserController) SignOut(ctx *fw.Context, store *session.Store) {
 type SignUpRequest struct {
 	Username string `json:"username" validate:"required"`
 	Password string `json:"password" validate:"required"`
-	Email    string `json:"email" validate:"email"`
+	Email    string `json:"email" validate:"email"` //邮箱地址
 }
 
 // SignUp 注册

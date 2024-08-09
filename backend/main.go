@@ -4,6 +4,8 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/linxlib/fw"
 	"github.com/linxlib/fw/middlewares"
+	"github.com/linxlib/fw_openapi"
+	fwOpenApi "github.com/linxlib/fw_openapi/middleware"
 	"github.com/linxlib/godeploy/controllers"
 	"github.com/linxlib/godeploy/controllers/models"
 	middlewares2 "github.com/linxlib/godeploy/middlewares"
@@ -26,10 +28,14 @@ func main() {
 		return
 	}
 	s.Map(db)
+
+	fw_openapi.NewOpenAPIFromFWServer(s, "openapi.yaml")
+
 	s.Use(middlewares2.NewStaticMiddleware("./static"))
 	//s.Use(middlewares.NewWebsocketHubMiddleware())
 	s.Use(middlewares.NewLoggerMiddleware(nil))
 	s.Use(middlewares.NewDefaultCorsMiddleware())
+	s.Use(fwOpenApi.NewOpenApiMiddleware("", "openapi.yaml"))
 	s.Use(middlewares.NewRecoveryMiddleware(&middlewares.RecoveryOptions{
 		NiceWeb: true,
 		Console: true,

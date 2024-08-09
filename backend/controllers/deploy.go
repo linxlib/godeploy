@@ -1,14 +1,15 @@
 package controllers
 
 import (
-	"context"
+	"bufio"
 	"errors"
+	"fmt"
 	"github.com/linxlib/fw"
 	"github.com/linxlib/godeploy/controllers/models"
-	"github.com/saracen/fastzip"
+	"github.com/linxlib/godeploy/services/deploy"
 	"gorm.io/gorm"
+	"log"
 	"mime/multipart"
-	"os"
 	"time"
 )
 
@@ -21,9 +22,9 @@ type DeployController struct {
 // DeployFormRequest
 // @Multipart
 type DeployFormRequest struct {
-	File      multipart.FileHeader `multipart:"file"`
+	File      multipart.FileHeader `multipart:"file"` //需要部署的压缩包
 	Hash      string               `multipart:"hash"`
-	ServiceId int                  `multipart:"serviceId" validate:"required"`
+	ServiceId int                  `multipart:"serviceId" validate:"required"` //服务ID
 }
 
 // Deploy
@@ -46,62 +47,63 @@ func (c *DeployController) Deploy(ctx *fw.Context, req *DeployFormRequest, db *g
 		}
 		return
 	}
-	f, err := req.File.Open()
-	if err != nil {
-		ctx.JSON(500, map[string]interface{}{
-			"code":    500,
-			"message": err.Error(),
-			"data":    nil,
-		})
-		return
-	}
-	defer f.Close()
-	//TODO file hash check
-
-	tmpEx := "./tmp"
-	os.Mkdir(tmpEx, 0777)
-	os.RemoveAll(tmpEx)
-	reader, err := fastzip.NewExtractorFromReader(f, req.File.Size, tmpEx)
-	if err != nil {
-		ctx.JSON(500, map[string]interface{}{
-			"code":    500,
-			"message": err.Error(),
-			"data":    nil,
-		})
-		return
-	}
-	err = reader.Extract(context.Background())
-	if err != nil {
-		ctx.JSON(500, map[string]interface{}{
-			"code":    500,
-			"message": err.Error(),
-			"data":    nil,
-		})
-		return
-	}
-	if !service.OverwriteFrom(tmpEx) {
-		ctx.JSON(500, map[string]interface{}{
-			"code":    500,
-			"message": "文件覆盖失败",
-			"data":    nil,
-		})
-		return
-	}
-	if !service.Start() {
-		ctx.JSON(500, map[string]interface{}{
-			"code":    500,
-			"message": "服务启动失败",
-			"data":    nil,
-		})
-		return
-	}
-	service.LastDeployTime = time.Now()
-	db.Save(service)
+	id := deploy.CreateNewDeploy(&req.File, service, db)
 	ctx.JSON(200, map[string]interface{}{
-		"code":    200,
-		"message": "服务部署成功",
-		"data":    nil,
+		"code": 200,
+		"data": id,
 	})
-	return
+
+}
+
+// @Query
+type SSEReq struct {
+	ID int `query:"id" validate:"required"` //deploy接口返回的id
+}
+
+// SSE deploy processing
+// @GET /sse
+func (c *DeployController) SSE(ctx *fw.Context, req *SSEReq) {
+	ctx.GetFastContext().SetContentType("text/event-stream")
+	ctx.SetHeader("Cache-Control", "no-cache")
+	ctx.SetHeader("Connection", "keep-alive")
+	//ctx.SetHeader("Access-Control-Allow-Origin", "*")
+	ctx.SetHeader("Transfer-Encoding", "chunked")
+	eventId := req.ID
+	if eventId == 0 {
+		ctx.JSON(400, map[string]interface{}{
+			"code":    400,
+			"message": "event not found",
+		})
+		return
+	}
+	timer := time.NewTicker(time.Second * 1)
+	ch, done := deploy.StartDeploy(eventId)
+
+	ctx.Stream(func(w *bufio.Writer) {
+		for {
+			select {
+			case e := <-ch:
+				log.Println("write data:", e.Message)
+				_, err := fmt.Fprintf(w, "data: %s\n\n", e.Message)
+				if err != nil {
+					log.Println("write data:", err)
+					continue
+				}
+				w.Flush()
+			case <-timer.C:
+				//log.Println("write time:")
+				//_, err := fmt.Fprintf(w, "data: %s\n\n", time.Now().Format(time.DateTime))
+				//if err != nil {
+				//	log.Println("write time:", err)
+				//	continue
+				//}
+				//w.Flush()
+			case <-done:
+				fmt.Fprintf(w, "data: %s\n\n", "done")
+				return
+			}
+		}
+
+	})
 
 }
