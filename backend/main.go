@@ -38,7 +38,9 @@ func main() {
 	//s.Use(middlewares.NewWebsocketHubMiddleware())
 	s.Use(middlewares.NewLoggerMiddleware(nil))
 	s.Use(middlewares.NewDefaultCorsMiddleware())
-	s.Use(fwOpenApi.NewOpenApiMiddleware("", "openapi.yaml"))
+
+	s.Use(fwOpenApi.NewOpenApiMiddleware())
+
 	s.Use(middlewares.NewRecoveryMiddleware(&middlewares.RecoveryOptions{
 		NiceWeb: true,
 		Console: true,
