@@ -5,7 +5,6 @@ import (
 	"github.com/linxlib/fw"
 	"github.com/linxlib/fw/middlewares"
 	"github.com/linxlib/fw_openapi"
-	fwOpenApi "github.com/linxlib/fw_openapi/middleware"
 	"github.com/linxlib/godeploy/controllers"
 	"github.com/linxlib/godeploy/controllers/models"
 	middlewares2 "github.com/linxlib/godeploy/middlewares"
@@ -14,8 +13,10 @@ import (
 	"gorm.io/gorm"
 )
 
-// @Title Test Overwrite Title
-// @Version v0.0.0
+// @Title A Simple Go Deploy Server
+// @Version v0.0.1
+// @Contact linx https://github.com/linxlib/fw slk1133@qq.com
+// @Description <a href="https://github.com/linxlib/fw">Link</a>
 
 //go:generate go run github.com/linxlib/astp/astpg -o gen.json
 func main() {
@@ -39,7 +40,7 @@ func main() {
 	s.Use(middlewares.NewLoggerMiddleware(nil))
 	s.Use(middlewares.NewDefaultCorsMiddleware())
 
-	s.Use(fwOpenApi.NewOpenApiMiddleware())
+	//s.Use(fwOpenApi.NewOpenApiMiddleware())
 
 	s.Use(middlewares.NewRecoveryMiddleware(&middlewares.RecoveryOptions{
 		NiceWeb: true,

@@ -21,7 +21,7 @@ func NewUserController(db *gorm.DB) *UserController {
 	return a
 }
 
-// UserController
+// UserController 用户
 // @Controller
 // @Route /user
 // @Session
@@ -32,10 +32,10 @@ type UserController struct {
 // UserApproveRequest
 // @Path
 type UserApproveRequest struct {
-	ID uint `path:"userid"`
+	ID uint `path:"userid"` //用户id
 }
 
-// Approve
+// Approve 用户审核
 // @POST /approve/{userid}
 func (u *UserController) Approve(ctx *fw.Context, db *gorm.DB, req *UserApproveRequest) {
 	var user models.User
@@ -66,8 +66,8 @@ func (u *UserController) Approve(ctx *fw.Context, db *gorm.DB, req *UserApproveR
 // SignInRequest
 // @Body
 type SignInRequest struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
+	Username string `json:"username" validate:"required"` //用户名
+	Password string `json:"password" validate:"required"` //密码
 }
 
 // LoginToken
@@ -115,7 +115,7 @@ func (u *UserController) SignIn(ctx *fw.Context, db *gorm.DB, req *SignInRequest
 
 }
 
-// SignOut
+// SignOut 退出
 // @POST /signOut
 func (u *UserController) SignOut(ctx *fw.Context, store *session.Store) {
 	u.ClearSession(store)
@@ -184,7 +184,7 @@ type UploadFormRequest struct {
 	File *multipart.FileHeader `multipart:"file"`
 }
 
-// UploadAvatar
+// UploadAvatar 上传头像
 // @POST /avatar/upload
 func (u *UserController) UploadAvatar(ctx *fw.Context, req *UploadFormRequest) {
 

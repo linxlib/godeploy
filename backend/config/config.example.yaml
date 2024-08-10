@@ -37,5 +37,10 @@ cache:
   redis:
     url: 10.10.0.16:6379
 
+openapi:
+  redirect: true
+  fileName: openapi.yaml
+  type: swagger
+
 
 

@@ -48,7 +48,7 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/linxlib/astp v0.0.0-20240725151659-eeff57fd3522 // indirect
-	github.com/linxlib/config v0.2.3 // indirect
+	github.com/linxlib/config v0.2.4 // indirect
 	github.com/linxlib/inject v0.1.3 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect

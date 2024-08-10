@@ -41,7 +41,7 @@ func (c *SimpleCrudController[E, T]) ClearSession(store *session.Store) {
 // IDQuery2
 // @Query
 type IDQuery2 struct {
-	ID uint `query:"id"`
+	ID uint `query:"id"` //id
 }
 
 // GetByID 根据ID获取
@@ -185,7 +185,7 @@ type DeleteBody struct {
 	IDS []uint `json:"ids"`
 }
 
-// Delete
+// Delete 删除
 // @POST /delete
 func (c *SimpleCrudController[E, T]) Delete(ctx *fw.Context, d *DeleteBody) {
 	err := c.db.Delete(new(T), d.IDS).Error
