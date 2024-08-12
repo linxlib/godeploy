@@ -11,11 +11,14 @@ replace (
 
 require (
 	github.com/coreos/go-systemd v0.0.0-00010101000000-000000000000
+	github.com/dc0d/dirwatch v0.4.3
 	github.com/fasthttp/session/v2 v2.5.6
+	github.com/fasthttp/websocket v1.5.10
 	github.com/glebarez/sqlite v1.11.0
 	github.com/linxlib/conv v1.1.1
 	github.com/linxlib/fw v0.0.0-00010101000000-000000000000
 	github.com/linxlib/fw_openapi v0.0.0-00010101000000-000000000000
+	github.com/nxadm/tail v1.4.8
 	github.com/otiai10/copy v1.14.0
 	github.com/saracen/fastzip v0.1.11
 	github.com/sirupsen/logrus v1.9.3
@@ -31,10 +34,10 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
+	github.com/dc0d/retry v1.2.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/fasthttp/router v1.5.2 // indirect
-	github.com/fasthttp/websocket v1.5.10 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/glebarez/go-sqlite v1.21.2 // indirect
 	github.com/go-redis/redis/v8 v8.11.5 // indirect
@@ -54,6 +57,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240612014219-fbbf4953d986 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pterm/pterm v0.12.79 // indirect
 	github.com/redis/go-redis/v9 v9.5.3 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -70,6 +74,7 @@ require (
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect

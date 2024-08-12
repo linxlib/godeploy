@@ -1,0 +1,194 @@
+package weblog
+
+import (
+	"github.com/sirupsen/logrus"
+	"io"
+	"os"
+	"path"
+	"path/filepath"
+	"sync"
+
+	"github.com/nxadm/tail"
+)
+
+// TailAttr holds tail worker attributes
+type TailAttr struct {
+	// Store for last Config.Lines
+	Buffer [][]byte
+
+	// Quit worker process
+	Quit chan struct{}
+
+	// Skip 1st line when read file not from start
+	IsHeadTrimmed bool
+}
+
+// TailService holds Worker hub operations
+type TailService struct {
+	log     logrus.FieldLogger
+	Config  *Config
+	workers map[string]*TailAttr
+	index   IndexItemAttrStore
+}
+
+// tailWorker holds tailer run arguments
+type tailWorker struct {
+	out     chan *TailMessage
+	quit    chan struct{}
+	log     logrus.FieldLogger
+	tf      *tail.Tail
+	channel string
+}
+
+// NewTailService creates tailer service
+func NewTailService(logger logrus.FieldLogger, cfg *Config) (*TailService, error) {
+	_, err := os.Stat(cfg.Root)
+	if err != nil {
+		return nil, err
+	}
+	aPath, err := filepath.Abs(cfg.Root)
+	if err != nil {
+		return nil, err
+	}
+	if aPath != cfg.Root {
+		cfg.Root = aPath
+	}
+	return &TailService{
+		Config:  cfg,
+		log:     logger,
+		workers: make(map[string]*TailAttr),
+		index:   make(IndexItemAttrStore),
+	}, nil
+}
+
+// WorkerExists checks if worker already registered
+func (ts *TailService) WorkerExists(channel string) bool {
+	_, ok := ts.workers[channel]
+	return ok
+}
+
+// ChannelExists checks if channel allowed to attach
+func (ts *TailService) ChannelExists(channel string) bool {
+	if channel == "" {
+		return true
+	}
+	_, ok := ts.index[channel]
+	return ok
+}
+
+// SetTrace turns on/off logging of incoming workers messages
+func (ts *TailService) SetTrace(mode string) {
+	if mode == "on" {
+		ts.Config.Trace = true
+	} else if mode == "off" {
+		ts.Config.Trace = false
+	}
+	ts.log.Info("Tracing", " trace ", ts.Config.Trace)
+}
+
+// TraceEnabled returns trace state
+func (ts *TailService) TraceEnabled() bool {
+	return ts.Config.Trace
+}
+
+// WorkerStop stops worker (tailer or indexer)
+func (ts *TailService) WorkerStop(channel string) {
+	w := ts.workers[channel]
+	w.Quit <- struct{}{}
+	delete(ts.workers, channel)
+}
+
+// TailerBuffer returns worker buffer
+func (ts *TailService) TailerBuffer(channel string) [][]byte {
+	return ts.workers[channel].Buffer
+}
+
+// TailerAppend adds a line into worker buffer
+func (ts *TailService) TailerAppend(channel string, data []byte) bool {
+	if ts.workers[channel].IsHeadTrimmed {
+		// Skip first trimmed (partial) line
+		ts.workers[channel].IsHeadTrimmed = false
+		return false
+	}
+	buf := ts.workers[channel].Buffer
+	if len(buf) == ts.Config.Lines {
+		// drop oldest line if buffer is full
+		buf = buf[1:]
+	}
+	buf = append(buf, data)
+	ts.workers[channel].Buffer = buf
+	return true
+}
+
+// TailerRun creates and runs tail worker
+func (ts *TailService) TailerRun(channel string, out chan *TailMessage, readyChan chan struct{}, wg *sync.WaitGroup) error {
+	cfg := ts.Config
+	config := tail.Config{
+		Follow:      true,
+		ReOpen:      true,
+		MustExist:   true,
+		MaxLineSize: cfg.MaxLineSize,
+		Poll:        cfg.Poll,
+	}
+	filename := path.Join(cfg.Root, channel)
+	headTrimmed := false
+
+	if cfg.Bytes != 0 {
+		fi, err := os.Stat(filename)
+		if err != nil {
+			return err
+		}
+		// get the file size
+		size := fi.Size()
+		if size > cfg.Bytes {
+			config.Location = &tail.SeekInfo{Offset: -cfg.Bytes, Whence: io.SeekEnd}
+			headTrimmed = true
+		}
+	}
+	t, err := tail.TailFile(filename, config)
+	if err != nil {
+		return err
+	}
+	quit := make(chan struct{})
+	ts.workers[channel] = &TailAttr{Buffer: [][]byte{}, Quit: quit, IsHeadTrimmed: headTrimmed}
+	go tailWorker{
+		tf:      t,
+		channel: channel,
+		out:     out,
+		quit:    quit,
+		log:     ts.log,
+	}.run(readyChan, wg)
+	return nil
+}
+
+// run runs tail worker
+func (tw tailWorker) run(readyChan chan struct{}, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer func() {
+		tw.log.Info("tailworker close")
+		wg.Done()
+	}()
+	log := tw.log.WithField("channel", tw.channel)
+	log.Info("Tailer started")
+	readyChan <- struct{}{}
+	for {
+		select {
+		case line, ok := <-tw.tf.Lines:
+			if !ok {
+				log.Error(tw.tf.Err(), " Tailer channel is unavailable")
+				tw.out <- &TailMessage{Channel: tw.channel, Data: tw.tf.Err().Error(), Type: "error"}
+				<-tw.quit
+				return
+			}
+			tw.out <- &TailMessage{Channel: tw.channel, Data: line.Text, Type: "log"}
+		case <-tw.quit:
+			err := tw.tf.Stop() // Cleanup()
+			if err != nil {
+				log.Error(err, " Tailer stopped with error")
+			} else {
+				log.Info(" Tailer stopped")
+			}
+			return
+		}
+	}
+}

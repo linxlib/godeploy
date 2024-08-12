@@ -9,6 +9,7 @@ import (
 	"github.com/linxlib/godeploy/controllers/models"
 	middlewares2 "github.com/linxlib/godeploy/middlewares"
 	"github.com/linxlib/godeploy/middlewares/session"
+	"github.com/linxlib/godeploy/middlewares/weblog"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -39,6 +40,7 @@ func main() {
 	//s.Use(middlewares.NewWebsocketHubMiddleware())
 	s.Use(middlewares.NewLoggerMiddleware(nil))
 	s.Use(middlewares.NewDefaultCorsMiddleware())
+	s.Use(weblog.NewWebLogMiddleware())
 
 	//s.Use(fwOpenApi.NewOpenApiMiddleware())
 
