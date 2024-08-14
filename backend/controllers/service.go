@@ -19,6 +19,7 @@ func NewServiceController(db *gorm.DB) *ServiceController {
 // @Route /service
 // @Controller
 // @Session
+// @Test
 type ServiceController struct {
 	*base.SimpleCrudController[uint, *models.Service]
 }

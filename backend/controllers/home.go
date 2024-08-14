@@ -20,6 +20,7 @@ const html = `<!DOCTYPE html>
 // HomeController
 // @Controller
 // @Route /
+// @Test
 type HomeController struct{}
 
 // Index
@@ -37,3 +38,9 @@ func (h *HomeController) Index(ctx *fw.Context) {
 func (h *HomeController) Websocket(bs []byte) {
 
 }
+
+// Home2Controller
+// @Controller
+// @Route /home2
+// @Test
+type Home2Controller struct{}

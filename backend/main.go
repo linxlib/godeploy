@@ -50,8 +50,10 @@ func main() {
 		Console: true,
 	}, nil))
 	s.Use(session.NewSessionMiddleware())
+	s.Use(middlewares2.NewTestMiddleware())
 
 	s.RegisterRoute(new(controllers.HomeController))
+	s.RegisterRoute(new(controllers.Home2Controller))
 	s.RegisterRoute(new(controllers.DeployController))
 	s.RegisterRoute(controllers.NewServiceController(db))
 	s.RegisterRoute(controllers.NewUserController(db))
