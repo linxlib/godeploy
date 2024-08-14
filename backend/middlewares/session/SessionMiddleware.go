@@ -4,22 +4,56 @@ import (
 	"github.com/fasthttp/session/v2"
 	"github.com/fasthttp/session/v2/providers/memory"
 	"github.com/fasthttp/session/v2/providers/redis"
-	"github.com/linxlib/conv"
 	"github.com/linxlib/fw"
 	"time"
 )
 
-func NewSessionMiddleware(providerName string, config map[string]any) fw.IMiddlewareGlobal {
+type Options struct {
+	Provider string       `yaml:"provider" default:"memory"`
+	Memory   MemoryConfig `yaml:"memory"`
+	Redis    RedisConfig  `yaml:"redis"`
+}
+
+type MemoryConfig struct{}
+type RedisConfig struct {
+	KeyPrefix       string        `yaml:"keyPrefix" default:"session_"`
+	Addr            string        `yaml:"addr" default:"127.0.0.1:6379"`
+	Username        string        `yaml:"username" default:""`
+	Password        string        `yaml:"password" default:""`
+	DB              int           `yaml:"db" default:"0"`
+	PoolSize        int           `yaml:"poolSize" default:"8"`
+	ConnMaxIdleTime time.Duration `yaml:"connMaxIdleTime" default:"5m"`
+}
+
+func NewSessionMiddleware() fw.IMiddlewareGlobal {
 	s := &SessionMiddleware{
 		MiddlewareCtl: fw.NewMiddlewareCtl("Session", "Session"),
-		providerName:  providerName,
-		config:        config,
 	}
+
+	return s
+}
+
+var _ fw.IMiddlewareCtl = (*SessionMiddleware)(nil)
+
+type IAuth interface {
+	CheckSession(store *session.Store) bool
+}
+
+type SessionMiddleware struct {
+	*fw.MiddlewareCtl
+	options *Options
+	session *session.Session
+}
+
+func (s *SessionMiddleware) DoInitOnce() {
+	s.options = new(Options)
+	s.LoadConfig("session", s.options)
+
 	encoder := session.Base64Encode
 	decoder := session.Base64Decode
 	var provider session.Provider
 	var err error
-	switch providerName {
+	switch s.options.Provider {
 	case "memory":
 		encoder = session.MSGPEncode
 		decoder = session.MSGPDecode
@@ -27,38 +61,18 @@ func NewSessionMiddleware(providerName string, config map[string]any) fw.IMiddle
 	case "redis":
 		encoder = session.MSGPEncode
 		decoder = session.MSGPDecode
-		if config == nil {
-			panic("config is nil for redis provider")
-		}
-		var kp string
-		var addr string
-		var poolSize int
-		var ConnMaxIdleTime time.Duration
-		if tmp, ok := config["Redis_KeyPrefix"]; ok {
-			kp = conv.String(tmp)
-		} else {
-			kp = "session"
-		}
-		if tmp, ok := config["Redis_Addr"]; ok {
-			addr = conv.String(tmp)
-		} else {
-			addr = "127.0.0.1:6379"
-		}
-		if tmp, ok := config["Redis_PoolSize"]; ok {
-			poolSize = conv.Int(tmp)
-		} else {
-			poolSize = 8
-		}
-		if tmp, ok := config["Redis_ConnMaxIdleTime"]; ok {
-			ConnMaxIdleTime, _ = time.ParseDuration(conv.String(tmp))
-		} else {
-			ConnMaxIdleTime = 30 * time.Second
-		}
+
+		var kp string = s.options.Redis.KeyPrefix
+		var addr string = s.options.Redis.Addr
+		var poolSize int = s.options.Redis.PoolSize
+		var db int = s.options.Redis.DB
+		var ConnMaxIdleTime time.Duration = s.options.Redis.ConnMaxIdleTime
 
 		provider, err = redis.New(redis.Config{
 			KeyPrefix:       kp,
 			Addr:            addr,
 			PoolSize:        poolSize,
+			DB:              db,
 			ConnMaxIdleTime: ConnMaxIdleTime,
 		})
 	default:
@@ -74,63 +88,35 @@ func NewSessionMiddleware(providerName string, config map[string]any) fw.IMiddle
 	if err = s.session.SetProvider(provider); err != nil {
 		panic(err)
 	}
-	return s
 }
 
-var _ fw.IMiddlewareCtl = (*SessionMiddleware)(nil)
-
-type IAuth interface {
-	CheckSession(store *session.Store) bool
-}
-
-type SessionMiddleware struct {
-	*fw.MiddlewareCtl
-	providerName string
-	config       map[string]any
-	session      *session.Session
-}
-
-func (s *SessionMiddleware) CloneAsMethod() fw.IMiddlewareMethod {
-	return s.CloneAsCtl()
-}
-func (s *SessionMiddleware) HandlerIgnored(next fw.HandlerFunc) fw.HandlerFunc {
+func (s *SessionMiddleware) Execute(ctx *fw.MiddlewareContext) fw.HandlerFunc {
 	return func(context *fw.Context) {
 		store, _ := s.session.Get(context.GetFastContext())
+
+		if !ctx.Ignored {
+			if ctl, ok := ctx.GetRValue().Interface().(IAuth); ok {
+				if !ctl.CheckSession(store) {
+					context.JSON(401, map[string]interface{}{
+						"code":    401,
+						"message": "session unauthorized",
+						"data":    nil,
+					})
+					store.Flush()
+					s.session.Save(context.GetFastContext(), store)
+					return
+				}
+			}
+		}
+
 		context.Map(store)
-		next(context)
-		if len(store.GetAll().KV) > 0 {
+		ctx.Next(context)
+		if ctx.Ignored {
+			if len(store.GetAll().KV) > 0 {
+				s.session.Save(context.GetFastContext(), store)
+			}
+		} else {
 			s.session.Save(context.GetFastContext(), store)
 		}
 	}
-}
-func (s *SessionMiddleware) HandlerMethod(next fw.HandlerFunc) fw.HandlerFunc {
-
-	return func(context *fw.Context) {
-		store, _ := s.session.Get(context.GetFastContext())
-
-		if ctl, ok := s.GetCtlRValue().Interface().(IAuth); ok {
-			if !ctl.CheckSession(store) {
-				context.JSON(401, map[string]interface{}{
-					"code":    401,
-					"message": "session unauthorized",
-					"data":    nil,
-				})
-				store.Flush()
-				s.session.Save(context.GetFastContext(), store)
-				return
-			}
-		}
-		context.Map(store)
-		next(context)
-		s.session.Save(context.GetFastContext(), store)
-
-	}
-}
-
-func (s *SessionMiddleware) CloneAsCtl() fw.IMiddlewareCtl {
-	return NewSessionMiddleware(s.providerName, s.config)
-}
-
-func (s *SessionMiddleware) HandlerController(base string) []*fw.RouteItem {
-	return fw.EmptyRouteItem(s)
 }

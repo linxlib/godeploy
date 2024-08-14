@@ -1,0 +1,22 @@
+os:
+  - windows
+  - linux
+arch:
+  - amd64
+name: deploy
+ldflags:
+  - "-s -w"
+  - github.com/linxlib/fw.VERSION=1.0.0
+tags:
+generate: true
+release:
+  dir: bin
+  compress: true
+  copy:
+    - ./config/config.yaml
+    - ./gen.json
+    - ./openapi.yaml
+
+
+
+

@@ -7,6 +7,7 @@ replace (
 	github.com/linxlib/astp => ../../astp
 	github.com/linxlib/fw => ../../../repos/fw
 	github.com/linxlib/fw_openapi => ../../fw_openapi
+	github.com/linxlib/config => ../../../linxlib/config
 )
 
 require (

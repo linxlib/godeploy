@@ -13,18 +13,30 @@ dev: true
 debug: true
 # disable colorful output
 nocolor: false
+
+db:
+  type: sqlite
+  dsn: deploy.db
+  autoMigrate: true
+
 logger:
   # 0-6 0: Panic 6: Trace
   loggerLevel: 5
   separateLevelFile: false
   logDir: "./log"
   rotate: false
+
   # Unit: M
   maxSize: 5
   maxAge: 28
   maxBackups: 3
   compress: false
   localTime: true
+loggerMiddleware:
+
+logMiddleware:
+
+
 cache:
   # redis||go-cache||file
   type: redis
@@ -35,12 +47,104 @@ cache:
     defaultExpiration: 24h
     cleanupInterval: 5m
   redis:
-    url: 10.10.0.16:6379
+    url: tcp://10.10.0.16:6379/0
 
 openapi:
   redirect: true
   fileName: openapi.yaml
   type: swagger
+  docPath: /doc
+  info:
+    title: FW - OpenAPI 3.0
+    description: |
+      hello world
+    termsOfService:
+    contact:
+      email:
+      url:
+      name:
+    license:
+      name:
+      url:
+    version: 1.0.0@beta
+    summary: |
+      hello world
 
+static:
+  list:
+    - route: "/static/file6/{path}"
+      path: ./static
+    - route: "/app/{path:*}"
+      path: ./app
 
+session:
+  provider: redis
+  memory:
+  redis:
+    keyPrefix: session_
+    addr: 10.10.0.16:6379
+    db: 0
+    poolSize: 8
+    connMaxIdleTime: 30s
+    username:
+    password:
 
+weblog:
+  root: log/
+  bytes: 5000
+  lines: 1000
+  maxLineSize: 180
+  listCache: 2
+  poll: false
+  trace: false
+  clientBufferSize: 256
+  wsReadBufferSize: 1024
+  wsWriteBufferSize: 1024
+  route:
+    ws: /ws/tail
+    index: /tail/
+
+basicAuth:
+  proxy: false
+  realm: Authorization Required
+  users:
+    admin: admin
+    user: user
+
+cors:
+  allowAllOrigins: true
+  allowOrigins:
+    - example.com
+  allowMethods:
+    - GET
+    - POST
+  allowPrivateNetwork: false
+  allowHeaders:
+    - Content-Type
+    - Authorization
+  allowCredentials: false
+  exposeHeaders:
+  maxAge: 100s
+  allowWildcard: true
+  allowBrowserExtensions: false
+  customSchemas:
+    - deploy://
+  allowWebsockets: true
+  allowFiles: true
+  optionsResponseStatusCode: 200
+recovery:
+  debug: true
+  stacktrace: true
+  requestHeader: true
+  requestBody: true
+  color: false
+  statusCode: 500
+
+serverDown:
+  method: PATCH
+  path: "/serverDown/{key}"
+  key: "hfgyefefefde"
+
+websocket:
+
+websocketHub:

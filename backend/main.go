@@ -36,7 +36,7 @@ func main() {
 
 	fw_openapi.NewOpenAPIFromFWServer(s, "openapi.yaml")
 
-	s.Use(middlewares2.NewStaticMiddleware("./static"))
+	s.Use(middlewares2.NewStaticMiddleware())
 	//s.Use(middlewares.NewWebsocketHubMiddleware())
 	s.Use(middlewares.NewLoggerMiddleware(nil))
 	s.Use(middlewares.NewDefaultCorsMiddleware())
@@ -48,14 +48,12 @@ func main() {
 		NiceWeb: true,
 		Console: true,
 	}, nil))
-	s.Use(session.NewSessionMiddleware("redis", map[string]any{
-		"Redis_Addr": "10.10.0.16:6379",
-	}))
+	s.Use(session.NewSessionMiddleware())
 
 	s.RegisterRoute(new(controllers.HomeController))
 	s.RegisterRoute(new(controllers.DeployController))
 	s.RegisterRoute(controllers.NewServiceController(db))
 	s.RegisterRoute(controllers.NewUserController(db))
 
-	s.Run()
+	s.Start()
 }

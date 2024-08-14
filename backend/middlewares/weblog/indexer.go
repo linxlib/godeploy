@@ -89,10 +89,10 @@ func (iw indexWorker) run(readyChan chan struct{}, wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer func() {
 		wg.Done()
-		iw.log.Info("Indexer stopped")
+		//iw.log.Info("Indexer stopped")
 	}()
 	notify := func(ev dirwatch.Event) {
-		iw.log.Info("Handling file event", " event ", ev)
+		//iw.log.Info("Handling file event", " event ", ev)
 		if err := sendUpdate(iw.out, iw.root, ev.Name); err != nil {
 			iw.log.Error(err, " Cannot get stat for file", " filepath ", ev.Name)
 		}

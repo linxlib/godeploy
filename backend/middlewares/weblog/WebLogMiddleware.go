@@ -3,7 +3,7 @@ package weblog
 import (
 	"embed"
 	"github.com/linxlib/fw"
-	"github.com/linxlib/inject"
+
 	"github.com/sirupsen/logrus"
 	"github.com/valyala/fasthttp"
 )
@@ -21,11 +21,11 @@ func NewWebLogMiddleware() *WebLogMiddleware {
 type WebLogMiddleware struct {
 	*fw.MiddlewareGlobal
 	service *Service
+	Logger  *logrus.Logger `inject:""`
 }
 
-func (w *WebLogMiddleware) Constructor(server inject.Provider) {
-	logrus.SetReportCaller(true)
-	svc, _ := New(logrus.StandardLogger(), &Config{
+func (w *WebLogMiddleware) DoInitOnce() {
+	svc, _ := New(logrus.New(), &Config{
 		Root:              "log/",
 		Bytes:             50000,
 		Lines:             1000,
@@ -40,21 +40,8 @@ func (w *WebLogMiddleware) Constructor(server inject.Provider) {
 	w.service = svc
 	go w.service.Run()
 }
-func (w *WebLogMiddleware) CloneAsMethod() fw.IMiddlewareMethod {
-	return w.CloneAsCtl()
-}
 
-func (w *WebLogMiddleware) HandlerMethod(next fw.HandlerFunc) fw.HandlerFunc {
-	return next
-}
-
-func (w *WebLogMiddleware) CloneAsCtl() fw.IMiddlewareCtl {
-	mid := NewWebLogMiddleware()
-	mid.service = w.service
-	return mid
-}
-
-func (w *WebLogMiddleware) HandlerController(base string) []*fw.RouteItem {
+func (w *WebLogMiddleware) Router(ctx *fw.MiddlewareContext) []*fw.RouteItem {
 	return []*fw.RouteItem{&fw.RouteItem{
 		Method:     "GET",
 		Path:       "/ws/tail",
