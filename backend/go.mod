@@ -5,9 +5,9 @@ go 1.22.0
 replace (
 	github.com/coreos/go-systemd => github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/linxlib/astp => ../../astp
+	github.com/linxlib/config => ../../../linxlib/config
 	github.com/linxlib/fw => ../../../repos/fw
 	github.com/linxlib/fw_openapi => ../../fw_openapi
-	github.com/linxlib/config => ../../../linxlib/config
 )
 
 require (

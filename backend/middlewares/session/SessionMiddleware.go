@@ -1,6 +1,7 @@
 package session
 
 import (
+	"fmt"
 	"github.com/fasthttp/session/v2"
 	"github.com/fasthttp/session/v2/providers/memory"
 	"github.com/fasthttp/session/v2/providers/redis"
@@ -92,6 +93,7 @@ func (s *SessionMiddleware) DoInitOnce() {
 
 func (s *SessionMiddleware) Execute(ctx *fw.MiddlewareContext) fw.HandlerFunc {
 	return func(context *fw.Context) {
+		fmt.Printf("%s.%s\n", ctx.ControllerName, ctx.MethodName)
 		store, _ := s.session.Get(context.GetFastContext())
 
 		if !ctx.Ignored {

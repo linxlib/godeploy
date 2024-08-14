@@ -10,7 +10,7 @@ import (
 
 func NewServiceController(db *gorm.DB) *ServiceController {
 	a := &ServiceController{
-		CrudController: base.NewCrudController[*models.Service](db),
+		SimpleCrudController: base.NewSimpleCrudController[uint, *models.Service](db),
 	}
 	return a
 }
@@ -20,7 +20,7 @@ func NewServiceController(db *gorm.DB) *ServiceController {
 // @Controller
 // @Session
 type ServiceController struct {
-	*base.CrudController[*models.Service]
+	*base.SimpleCrudController[uint, *models.Service]
 }
 
 // StatusRequest

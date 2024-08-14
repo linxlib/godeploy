@@ -30,3 +30,10 @@ func (h *HomeController) Index(ctx *fw.Context) {
 		"version": "1.0",
 	})
 }
+
+// Websocket
+// @Websocket
+// @ANY /ws
+func (h *HomeController) Websocket(bs []byte) {
+
+}
