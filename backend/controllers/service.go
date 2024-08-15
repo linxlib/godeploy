@@ -8,9 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func NewServiceController(db *gorm.DB) *ServiceController {
+func NewServiceController() *ServiceController {
 	a := &ServiceController{
-		SimpleCrudController: base.NewSimpleCrudController[uint, *models.Service](db),
+		SimpleCrudController: base.NewSimpleCrudController[uint, *models.Service](),
 	}
 	return a
 }
@@ -32,9 +32,10 @@ type StatusRequest struct {
 
 // Status
 // @GET /status
-func (s *ServiceController) Status(ctx *fw.Context, req *StatusRequest, db *gorm.DB) {
+func (s *ServiceController) Status(ctx *fw.Context, req *StatusRequest) {
+
 	var service = new(models.Service)
-	if err := db.First(&service, req.ServiceId).Error; err != nil {
+	if err := s.DB.First(&service, req.ServiceId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(404, map[string]interface{}{
 				"code":    404,
@@ -62,9 +63,9 @@ type ActionRequest struct {
 
 // Action
 // @POST /action
-func (s *ServiceController) Action(ctx *fw.Context, req *ActionRequest, db *gorm.DB) {
+func (s *ServiceController) Action(ctx *fw.Context, req *ActionRequest) {
 	var service = new(models.Service)
-	if err := db.First(&service, req.ServiceId).Error; err != nil {
+	if err := s.DB.First(&service, req.ServiceId).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(404, map[string]interface{}{
 				"code":    404,

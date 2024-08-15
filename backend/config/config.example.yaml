@@ -32,9 +32,12 @@ logger:
   maxBackups: 3
   compress: false
   localTime: true
-loggerMiddleware:
 
-logMiddleware:
+
+serverDown:
+  # method: PATCH
+  # path: "/serverDown/{key}"
+  key: "hfgyefefefde"
 
 
 cache:
@@ -140,10 +143,6 @@ recovery:
   color: false
   statusCode: 500
 
-serverDown:
-  method: PATCH
-  path: "/serverDown/{key}"
-  key: "hfgyefefefde"
 
 websocket:
 

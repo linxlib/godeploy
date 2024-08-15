@@ -14,9 +14,9 @@ import (
 	"time"
 )
 
-func NewUserController(db *gorm.DB) *UserController {
+func NewUserController() *UserController {
 	a := &UserController{
-		SimpleCrudController: base.NewSimpleCrudController[uint, *models.User](db),
+		SimpleCrudController: base.NewSimpleCrudController[uint, *models.User](),
 	}
 	return a
 }
@@ -37,9 +37,9 @@ type UserApproveRequest struct {
 
 // Approve 用户审核
 // @POST /approve/{userid}
-func (u *UserController) Approve(ctx *fw.Context, db *gorm.DB, req *UserApproveRequest) {
+func (u *UserController) Approve(ctx *fw.Context, req *UserApproveRequest) {
 	var user models.User
-	if err := db.First(&user, req.ID).Error; err != nil {
+	if err := u.DB.First(&user, req.ID).Error; err != nil {
 		ctx.JSON(500, map[string]interface{}{
 			"code":    500,
 			"message": err.Error(),
@@ -52,7 +52,7 @@ func (u *UserController) Approve(ctx *fw.Context, db *gorm.DB, req *UserApproveR
 		return
 	}
 	user.Enabled = true
-	if err := db.Save(&user).Error; err != nil {
+	if err := u.DB.Save(&user).Error; err != nil {
 		ctx.JSON(500, map[string]interface{}{
 			"code":    500,
 			"message": err.Error(),
@@ -85,9 +85,9 @@ type LoginToken struct {
 // SignIn 登录
 // @POST /signIn
 // @Ignore Session
-func (u *UserController) SignIn(ctx *fw.Context, db *gorm.DB, req *SignInRequest, s *session.Store) {
+func (u *UserController) SignIn(ctx *fw.Context, req *SignInRequest, s *session.Store) {
 	var user models.User
-	if err := db.Where("Name = ?", req.Username).Or("Email=?", req.Username).First(&user).Error; err != nil {
+	if err := u.DB.Where("Name = ?", req.Username).Or("Email=?", req.Username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(404, base.Resp[int, any](404, "用户不存在", nil))
 			return
@@ -100,7 +100,7 @@ func (u *UserController) SignIn(ctx *fw.Context, db *gorm.DB, req *SignInRequest
 	if user.Password == req.Password {
 		user.LastLoginTime = time.Now()
 		user.LastLoginIp = ctx.RemoteIP()
-		db.Save(&user)
+		u.DB.Save(&user)
 		u.SetAuthed(s, map[string]any{
 			"user_id":   user.ID,
 			"user_name": user.Name,
@@ -132,10 +132,10 @@ type SignUpRequest struct {
 
 // SignUp 注册
 // @POST /signUp
-func (u *UserController) SignUp(ctx *fw.Context, db *gorm.DB, req *SignUpRequest) {
+func (u *UserController) SignUp(ctx *fw.Context, req *SignUpRequest) {
 	//panic("ss")
 	var user = new(models.User)
-	if err := db.Where("Name=?", req.Username).Or("Email=?", req.Email).First(user).Error; err != nil {
+	if err := u.DB.Where("Name=?", req.Username).Or("Email=?", req.Email).First(user).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(500, map[string]interface{}{
 				"code":    500,
@@ -150,7 +150,7 @@ func (u *UserController) SignUp(ctx *fw.Context, db *gorm.DB, req *SignUpRequest
 		return
 	}
 	var count int64
-	db.Model(&models.User{}).Count(&count)
+	u.DB.Model(&models.User{}).Count(&count)
 	isAdmin := false
 	// the first user is administrator
 	if count == 0 {
@@ -166,7 +166,7 @@ func (u *UserController) SignUp(ctx *fw.Context, db *gorm.DB, req *SignUpRequest
 		Enabled:     isAdmin,
 		LastLoginIp: "",
 	}
-	if err := db.Create(&user1).Error; err != nil {
+	if err := u.DB.Create(&user1).Error; err != nil {
 		ctx.JSON(500, map[string]interface{}{
 			"code":    500,
 			"message": err.Error(),

@@ -1,17 +1,14 @@
 package main
 
 import (
-	"github.com/glebarez/sqlite"
 	"github.com/linxlib/fw"
 	"github.com/linxlib/fw/middlewares"
 	"github.com/linxlib/fw_openapi"
 	"github.com/linxlib/godeploy/controllers"
-	"github.com/linxlib/godeploy/controllers/models"
 	middlewares2 "github.com/linxlib/godeploy/middlewares"
 	"github.com/linxlib/godeploy/middlewares/session"
 	"github.com/linxlib/godeploy/middlewares/weblog"
-	"github.com/sirupsen/logrus"
-	"gorm.io/gorm"
+	"github.com/linxlib/godeploy/services/db"
 )
 
 // @Title A Simple Go Deploy Server
@@ -22,17 +19,7 @@ import (
 //go:generate go run github.com/linxlib/astp/astpg -o gen.json
 func main() {
 	s := fw.New()
-	db, err := gorm.Open(sqlite.Open("deploy.db"))
-	if err != nil {
-		logrus.WithError(err).Error("connect to db failed")
-		return
-	}
-	err = db.AutoMigrate(&models.User{}, &models.Service{})
-	if err != nil {
-		logrus.WithError(err).Error("auto migrate failed")
-		return
-	}
-	s.Map(db)
+	s.UseMapper(new(db.DBMapper))
 
 	fw_openapi.NewOpenAPIFromFWServer(s, "openapi.yaml")
 
@@ -42,6 +29,7 @@ func main() {
 	s.Use(middlewares.NewLoggerMiddleware(nil))
 	s.Use(middlewares.NewDefaultCorsMiddleware())
 	s.Use(weblog.NewWebLogMiddleware())
+	s.Use(middlewares.NewServerDownMiddleware())
 
 	//s.Use(fwOpenApi.NewOpenApiMiddleware())
 
@@ -55,8 +43,8 @@ func main() {
 	s.RegisterRoute(new(controllers.HomeController))
 	s.RegisterRoute(new(controllers.Home2Controller))
 	s.RegisterRoute(new(controllers.DeployController))
-	s.RegisterRoute(controllers.NewServiceController(db))
-	s.RegisterRoute(controllers.NewUserController(db))
+	s.RegisterRoute(controllers.NewServiceController())
+	s.RegisterRoute(controllers.NewUserController())
 
 	s.Start()
 }

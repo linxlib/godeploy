@@ -5,22 +5,26 @@ import (
 	"github.com/fasthttp/session/v2"
 	"github.com/linxlib/fw"
 	"github.com/linxlib/godeploy/base/models"
+	"github.com/linxlib/inject"
 	"github.com/valyala/fasthttp"
 	"gorm.io/gorm"
 	"math"
 )
 
-func NewSimpleCrudController[E models.PrimaryKey, T models.IBase[E]](db *gorm.DB) *SimpleCrudController[E, T] {
-	c := &SimpleCrudController[E, T]{
-		db: db,
-	}
+func NewSimpleCrudController[E models.PrimaryKey, T models.IBase[E]]() *SimpleCrudController[E, T] {
+	c := &SimpleCrudController[E, T]{}
 	return c
 }
 
 // SimpleCrudController
 // a base crud controller for models which has one primary field
 type SimpleCrudController[E models.PrimaryKey, T models.IBase[E]] struct {
-	db *gorm.DB
+	DB *gorm.DB
+}
+
+func (c *SimpleCrudController[E, T]) Init(provider inject.Provider) {
+	c.DB = &gorm.DB{}
+	provider.Provide(c.DB)
 }
 
 func (c *SimpleCrudController[E, T]) CheckSession(store *session.Store) bool {
@@ -48,7 +52,7 @@ type IDQuery2 struct {
 // @GET /
 func (c *SimpleCrudController[E, T]) GetByID(ctx *fw.Context, q *IDQuery2) {
 	v := new(T)
-	err := c.db.First(v, q.ID).Error
+	err := c.DB.First(v, q.ID).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(404, map[string]interface{}{
@@ -129,7 +133,7 @@ func ListData[T any](list []T, total int64, size int) ListDataBase[T] {
 func (c *SimpleCrudController[E, T]) GetPageList(ctx *fw.Context, q *PageSize2, store *session.Store) {
 	var vs []T
 	var count int64
-	d := c.db
+	d := c.DB
 	if q.Search != "" {
 		d = d.Where("name like ?", "%"+q.Search+"%")
 	}
@@ -142,7 +146,7 @@ func (c *SimpleCrudController[E, T]) GetPageList(ctx *fw.Context, q *PageSize2, 
 // InsertOrUpdate 插入或修改
 // @POST /
 func (c *SimpleCrudController[E, T]) InsertOrUpdate(ctx *fw.Context, body T, store *session.Store) {
-	db := c.db
+	db := c.DB
 	m := body.CheckExistColumns()
 	for col, value := range m {
 		db = db.Where(col, value)
@@ -160,9 +164,9 @@ func (c *SimpleCrudController[E, T]) InsertOrUpdate(ctx *fw.Context, body T, sto
 
 	var err error
 	if _, ok := body.GetID(); ok {
-		err = c.db.Model(body).Updates(body).Error
+		err = c.DB.Model(body).Updates(body).Error
 	} else {
-		err = c.db.Create(body).Error
+		err = c.DB.Create(body).Error
 	}
 	if err != nil {
 		ctx.JSON(500, map[string]interface{}{
@@ -188,7 +192,7 @@ type DeleteBody struct {
 // Delete 删除
 // @POST /delete
 func (c *SimpleCrudController[E, T]) Delete(ctx *fw.Context, d *DeleteBody) {
-	err := c.db.Delete(new(T), d.IDS).Error
+	err := c.DB.Delete(new(T), d.IDS).Error
 	if err != nil {
 		ctx.JSON(500, map[string]interface{}{
 			"code":    500,
