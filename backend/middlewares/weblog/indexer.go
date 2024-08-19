@@ -45,7 +45,7 @@ func (ts *TailService) IndexerRun(out chan *IndexItemEvent, wg *sync.WaitGroup) 
 	if err != nil {
 		ts.log.Error(err, "Path walk")
 	}
-	ts.log.Info("Indexer started")
+	//ts.log.Info("Indexer started")
 }
 
 // IndexKeys returns sorted index keys

@@ -130,7 +130,7 @@ func ListData[T any](list []T, total int64, size int) ListDataBase[T] {
 
 // GetPageList 获取分页
 // @GET /list
-func (c *SimpleCrudController[E, T]) GetPageList(ctx *fw.Context, q *PageSize2, store *session.Store) {
+func (c *SimpleCrudController[E, T]) GetPageList(ctx *fw.Context, q *PageSize2) {
 	var vs []T
 	var count int64
 	d := c.DB
@@ -139,13 +139,13 @@ func (c *SimpleCrudController[E, T]) GetPageList(ctx *fw.Context, q *PageSize2, 
 	}
 	d1 := d.Model(new(T))
 	d1.Count(&count)
-	d1.Offset(q.Offset()).Limit(q.Size).Find(&vs)
+	d.Model(new(T)).Offset(q.Offset()).Limit(q.Size).Find(&vs)
 	ctx.JSON(fasthttp.StatusOK, Resp(200, "ok", ListData(vs, count, q.Size)))
 }
 
 // InsertOrUpdate 插入或修改
 // @POST /
-func (c *SimpleCrudController[E, T]) InsertOrUpdate(ctx *fw.Context, body T, store *session.Store) {
+func (c *SimpleCrudController[E, T]) InsertOrUpdate(ctx *fw.Context, body T) {
 	db := c.DB
 	m := body.CheckExistColumns()
 	for col, value := range m {
