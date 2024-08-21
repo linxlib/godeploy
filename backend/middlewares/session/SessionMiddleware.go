@@ -45,6 +45,9 @@ type SessionMiddleware struct {
 	session *session.Session
 }
 
+// DoInitOnce is called once when the application starts.
+// It loads the config for this middleware and sets up the session store.
+// It will panic if the provider is invalid or if there is an error setting up the provider.
 func (s *SessionMiddleware) DoInitOnce() {
 	s.options = new(Options)
 	s.LoadConfig("session", s.options)
@@ -90,6 +93,10 @@ func (s *SessionMiddleware) DoInitOnce() {
 	}
 }
 
+// Execute will check the session and if unauthorized, return 401
+// If authorized, it will set the session to the context and call the next handler
+// If the handler is ignored, it will only save the session if it contains data
+// Otherwise, it will always save the session
 func (s *SessionMiddleware) Execute(ctx *fw.MiddlewareContext) fw.HandlerFunc {
 	return func(context *fw.Context) {
 		//fmt.Printf("%s.%s\n", ctx.ControllerName, ctx.MethodName)

@@ -16,14 +16,16 @@ require (
 	github.com/fasthttp/session/v2 v2.5.6
 	github.com/fasthttp/websocket v1.5.10
 	github.com/glebarez/sqlite v1.11.0
+	github.com/linxlib/config v0.2.4
 	github.com/linxlib/conv v1.1.1
 	github.com/linxlib/fw v0.0.0-00010101000000-000000000000
 	github.com/linxlib/fw_openapi v0.0.0-00010101000000-000000000000
+	github.com/linxlib/inject v0.1.3
+	github.com/marcinwyszynski/directory_tree v0.0.0-20150101213911-a96c3845f18c
 	github.com/nxadm/tail v1.4.8
 	github.com/otiai10/copy v1.14.0
 	github.com/saracen/fastzip v0.1.11
 	github.com/sirupsen/logrus v1.9.3
-	github.com/tombuildsstuff/golang-iis v0.0.0-20181108203908-81205ad1ef60
 	github.com/valyala/fasthttp v1.55.0
 	gorm.io/gorm v1.25.11
 )
@@ -52,8 +54,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/linxlib/astp v0.0.0-20240725151659-eeff57fd3522 // indirect
-	github.com/linxlib/config v0.2.4 // indirect
-	github.com/linxlib/inject v0.1.3 // indirect
 	github.com/lithammer/fuzzysearch v1.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.15 // indirect

@@ -1,11 +1,19 @@
 package controllers
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"github.com/coreos/go-systemd/dbus"
 	"github.com/linxlib/fw"
 	"github.com/linxlib/godeploy/base"
 	"github.com/linxlib/godeploy/controllers/models"
+	"github.com/linxlib/godeploy/pkgs/dir_tree"
+	"github.com/linxlib/godeploy/pkgs/golang-iis/iis"
+	"github.com/linxlib/godeploy/pkgs/golang-iis/iis/websites"
+	"github.com/valyala/fasthttp"
 	"gorm.io/gorm"
+	"strings"
 )
 
 func NewServiceController() *ServiceController {
@@ -83,29 +91,124 @@ func (s *ServiceController) Action(ctx *fw.Context, req *ActionRequest) {
 	}
 	switch *req.ActionType {
 	case models.Reboot:
-		service.Stop()
-		service.Start()
-		ctx.JSON(200, base.Resp(200, "", service.Status()))
+
+		ctx.JSON(200, base.Resp(200, fmt.Sprint(service.Restart()), service.Status()))
 	case models.Start:
-		service.Start()
-		ctx.JSON(200, base.Resp(200, "", service.Status()))
+		ctx.JSON(200, base.Resp(200, fmt.Sprint(service.Start()), service.Status()))
 	case models.Stop:
-		service.Stop()
-		ctx.JSON(200, base.Resp(200, "", service.Status()))
+		ctx.JSON(200, base.Resp(200, fmt.Sprint(service.Stop()), service.Status()))
 	default:
 		ctx.JSON(200, base.Resp(200, "", service.Status()))
 	}
 
 }
 
+// DirTreeRequest
+// @Query
+type DirTreeRequest struct {
+	Home string `query:"home" validate:"required"`
+}
+
 // DirTree
 // @GET /dir_tree
-func (s *ServiceController) DirTree(ctx *fw.Context) {
-
+func (s *ServiceController) DirTree(ctx *fw.Context, req *DirTreeRequest) {
+	tree, err := dir_tree.NewDirList(req.Home)
+	if err != nil {
+		ctx.JSON(200, map[string]interface{}{
+			"code":    500,
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+	ctx.JSON(fasthttp.StatusOK, base.Data(tree))
 }
 
 // IISServiceList
 // @GET /IISServiceList
-func (s *ServiceController) IISServiceList() {
+func (s *ServiceController) IISServiceList(ctx *fw.Context) {
+	client, err := iis.NewClient()
+	if err != nil {
+		ctx.JSON(200, map[string]interface{}{
+			"code":    500,
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+	type Website1 struct {
+		*websites.Website
+		Binding string `json:"binding"`
+	}
+	wss, err := client.Websites.GetAll()
+	if err != nil {
+		ctx.JSON(200, map[string]interface{}{
+			"code":    500,
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	}
+	results := make([]*Website1, 0)
+	for _, website := range wss {
+		result := &Website1{Website: website}
+		bindings, err := client.Websites.GetBindings(website.Name)
+		if err != nil {
+			ctx.JSON(200, map[string]interface{}{
+				"code":    500,
+				"message": err.Error(),
+				"data":    nil,
+			})
+			return
+		}
+		for i, binding := range bindings {
+			if i != 0 {
+				result.Binding += ","
+			}
+			result.Binding += fmt.Sprintf("%s:%d", binding.IPAddress, binding.Port)
+		}
+
+		results = append(results, result)
+	}
+
+	ctx.JSON(fasthttp.StatusOK, base.ListData(results, len(results), 0).Resp())
+}
+
+// FindUnitRequest
+// @Query
+type FindUnitRequest struct {
+	Name string `query:"name" validate:"required"` //unit name with or without .service suffix
+}
+
+type FindUnitResponse struct {
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	JobPath string `json:"job_path"`
+	Desc    string `json:"desc"`
+}
+
+// FindUnit
+// @GET /find_unit
+func (s *ServiceController) FindUnit(ctx *fw.Context, query *FindUnitRequest) {
+	conn, _ := dbus.NewSystemdConnectionContext(context.Background())
+	defer conn.Close()
+	if !strings.HasSuffix(query.Name, ".service") {
+		query.Name += ".service"
+	}
+	names, err := conn.ListUnitsByNamesContext(context.Background(), []string{query.Name})
+	if err != nil {
+		return
+	}
+	results := make([]*FindUnitResponse, 0)
+	for _, name := range names {
+		results = append(results, &FindUnitResponse{
+			Name:    name.Name,
+			Path:    string(name.Path),
+			JobPath: string(name.JobPath),
+			Desc:    name.Description,
+		})
+	}
+
+	ctx.JSON(fasthttp.StatusOK, base.ListData(results, len(results), 0).Resp())
 
 }

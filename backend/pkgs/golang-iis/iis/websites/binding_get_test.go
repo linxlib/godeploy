@@ -1,0 +1,14 @@
+package websites
+
+import (
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func TestWebsitesClient_GetBindings(t *testing.T) {
+	var s = `[{"Attributes":[{"IsInheritedFromDefaultValue":false,"IsProtected":false,"Name":"protocol","TypeName":"System.String","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Value":"http","IsExtended":false},{"IsInheritedFromDefaultValue":false,"IsProtected":false,"Name":"bindingInformation","TypeName":"System.String","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Value":"*:80:","IsExtended":false},{"IsInheritedFromDefaultValue":true,"IsProtected":false,"Name":"sslFlags","TypeName":"System.Int64","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Value":0,"IsExtended":false},{"IsInheritedFromDefaultValue":false,"IsProtected":false,"Name":"isDsMapperEnabled","TypeName":"System.Boolean","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Value":false,"IsExtended":true},{"IsInheritedFromDefaultValue":false,"IsProtected":false,"Name":"certificateHash","TypeName":"System.String","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Value":"","IsExtended":true},{"IsInheritedFromDefaultValue":false,"IsProtected":false,"Name":"certificateStoreName","TypeName":"System.String","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Value":"","IsExtended":true}],"ChildElements":[],"ElementTagName":"binding","Methods":[{"Name":"EnableDsMapper","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationMethodSchema"},{"Name":"DisableDsMapper","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationMethodSchema"},{"Name":"AddSslCertificate","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationMethodSchema"},{"Name":"RemoveSslCertificate","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationMethodSchema"},{"Name":"RebindSslCertificate","Schema":"Microsoft.IIs.PowerShell.Framework.ConfigurationMethodSchema"}],"Schema":{"AllowUnrecognizedAttributes":false,"AttributeSchemas":["Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema","Microsoft.IIs.PowerShell.Framework.ConfigurationAttributeSchema"],"ChildElementSchemas":null,"CollectionSchema":null,"IsCollectionDefault":false,"Name":"binding"},"protocol":"http","bindingInformation":"*:80:","sslFlags":0,"isDsMapperEnabled":false,"certificateHash":"","certificateStoreName":"","ItemXPath":"/system.applicationHost/sites/site[@name=\u0027Default Web Site\u0027 and @id=\u00271\u0027]"}]`
+	var v []getBindingResponse
+	json.Unmarshal([]byte(s), &v)
+	fmt.Println(v)
+}

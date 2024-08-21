@@ -20,11 +20,20 @@ type User struct {
 	LastLoginIp   string `gorm:"type:varchar(255)"`
 }
 
+// GetID returns the ID of the user and a boolean indicating if the ID is valid.
+//
+// If the ID is not valid, the second return value will be false.
+// Returns the user's ID and a boolean indicating if the ID is valid.
 func (u *User) GetID() (uint, bool) {
-
-	if u.ID == 0 {
+	if u.BaseModel == nil {
 		return 0, false
 	}
+	// Check if the ID is valid
+	if u.ID == 0 {
+		// If the ID is not valid, return 0 and false
+		return 0, false
+	}
+	// Return the ID and true
 	return u.ID, true
 }
 

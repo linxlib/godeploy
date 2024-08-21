@@ -11,6 +11,9 @@ import (
 	"math"
 )
 
+// NewSimpleCrudController returns a new SimpleCrudController.
+//
+// It's a base crud controller for models which has one primary field.
 func NewSimpleCrudController[E models.PrimaryKey, T models.IBase[E]]() *SimpleCrudController[E, T] {
 	c := &SimpleCrudController[E, T]{}
 	return c
@@ -27,18 +30,37 @@ func (c *SimpleCrudController[E, T]) Init(provider inject.Provider) {
 	provider.Provide(c.DB)
 }
 
+// CheckSession checks if the session is authenticated.
+//
+// If the session is not authenticated, this method returns false.
+// Otherwise, it returns true.
 func (c *SimpleCrudController[E, T]) CheckSession(store *session.Store) bool {
+	// If the session is nil, it's not authenticated.
 	if store == nil {
 		return false
 	}
+	// If the user_id key is not set in the session, it's not authenticated.
 	return store.Get("user_id") != nil
 }
+
+// SetAuthed sets the provided data into the session store.
+//
+// Parameters:
+// - store: the session store to set the data into.
+// - data: a map of key-value pairs to set in the session store.
 func (c *SimpleCrudController[E, T]) SetAuthed(store *session.Store, data map[string]any) {
+	// Iterate over each key-value pair in the data map.
 	for key, val := range data {
+		// Set the key-value pair in the session store.
 		store.Set(key, val)
 	}
 }
+
+// ClearSession clears the session store.
+//
+// This method is used to clear the session after the user logs out.
 func (c *SimpleCrudController[E, T]) ClearSession(store *session.Store) {
+	// Clear the session store.
 	store.Flush()
 }
 
@@ -73,7 +95,7 @@ func (c *SimpleCrudController[E, T]) GetByID(ctx *fw.Context, q *IDQuery2) {
 }
 
 type IData interface {
-	any | ListDataBase[any]
+	any | ListDataBase[any, int64] | ListDataBase[any, int]
 }
 
 type RespBase[E int | string, T IData] struct {
@@ -82,29 +104,63 @@ type RespBase[E int | string, T IData] struct {
 	Data    T      `json:"data"`
 }
 
+// RespInt is a helper function that returns a RespBase[int, T] struct.
+// It is used to create a response with an integer code and data.
+//
+// Parameters:
+// - code: the integer code to be set in the RespBase struct.
+// - message: the message to be set in the RespBase struct.
+// - data: the data to be set in the RespBase struct.
+//
+// Returns:
+// - RespBase[int, T]: the created RespBase struct.
 func RespInt[T IData](code int, message string, data T) RespBase[int, T] {
+	// Create a new RespBase struct with the provided parameters.
 	return RespBase[int, T]{
-		Code:    code,
-		Message: message,
-		Data:    data,
+		Code:    code,    // Set the code field to the provided code.
+		Message: message, // Set the message field to the provided message.
+		Data:    data,    // Set the data field to the provided data.
 	}
-
 }
+
+// Resp is a helper function that returns a RespBase[E, T] struct.
+// It is used to create a response with a generic code and data.
+//
+// Parameters:
+// - code: the generic code to be set in the RespBase struct.
+// - message: the message to be set in the RespBase struct.
+// - data: the data to be set in the RespBase struct.
+//
+// Returns:
+// - RespBase[E, T]: the created RespBase struct.
 func Resp[E int | string, T IData](code E, message string, data T) RespBase[E, T] {
+	// Create a new RespBase struct with the provided parameters.
+	// The code, message, and data fields are set to the provided values.
 	return RespBase[E, T]{
-		Code:    code,
-		Message: message,
-		Data:    data,
+		Code:    code,    // Set the code field to the provided code.
+		Message: message, // Set the message field to the provided message.
+		Data:    data,    // Set the data field to the provided data.
 	}
-
 }
-func RespString[T IData](code string, message string, data T) RespBase[string, T] {
-	return RespBase[string, T]{
-		Code:    code,
-		Message: message,
-		Data:    data,
-	}
 
+// RespString is a helper function that returns a RespBase[string, T] struct.
+// It is used to create a response with a string code and data.
+//
+// Parameters:
+// - code: the string code to be set in the RespBase struct.
+// - message: the message to be set in the RespBase struct.
+// - data: the data to be set in the RespBase struct.
+//
+// Returns:
+// - RespBase[string, T]: the created RespBase struct.
+func RespString[T IData](code string, message string, data T) RespBase[string, T] {
+	// Create a new RespBase struct with the provided parameters.
+	// The code, message, and data fields are set to the provided values.
+	return RespBase[string, T]{
+		Code:    code,    // Set the code field to the provided code.
+		Message: message, // Set the message field to the provided message.
+		Data:    data,    // Set the data field to the provided data.
+	}
 }
 
 // PageSize2
@@ -114,18 +170,41 @@ type PageSize2 struct {
 	Search string `query:"search" default:""` //搜索名称
 }
 
-type ListDataBase[T any] struct {
-	List      []T   `json:"list"`
-	Total     int64 `json:"total"`
-	TotalPage int   `json:"totalPage"`
+type ListDataBase[T any, T1 int | int64] struct {
+	List      []T `json:"list"`
+	Total     T1  `json:"total"`
+	TotalPage int `json:"totalPage"`
 }
 
-func ListData[T any](list []T, total int64, size int) ListDataBase[T] {
-	return ListDataBase[T]{
-		List:      list,
-		Total:     total,
-		TotalPage: int(math.Ceil(float64(total) / float64(size))),
+func (l ListDataBase[T, T1]) Resp() RespBase[int, ListDataBase[T, T1]] {
+	return Resp(200, "ok", l)
+}
+
+// ListData returns a ListDataBase struct containing the provided list, total, and totalPage.
+//
+// Parameters:
+// - list: the list of items to be included in the ListDataBase struct.
+// - total: the total number of items to be included in the ListDataBase struct.
+// - size: the number of items per page to be included in the ListDataBase struct.
+//
+// Returns:
+// - ListDataBase[T]: the created ListDataBase struct.
+func ListData[T any, T1 int | int64](list []T, total T1, size int) ListDataBase[T, T1] {
+	// Calculate the total number of pages based on the total number of items and the number of items per page.
+	// The math.Ceil function is used to round up the result to the nearest integer.
+	totalPage := int(math.Ceil(float64(total) / float64(size)))
+
+	// Create a new ListDataBase struct with the provided parameters.
+	// The List, Total, and TotalPage fields are set to the provided values.
+	return ListDataBase[T, T1]{
+		List:      list,      // Set the List field to the provided list.
+		Total:     total,     // Set the Total field to the provided total.
+		TotalPage: totalPage, // Set the TotalPage field to the calculated totalPage.
 	}
+}
+
+func Data[T any](data T) RespBase[int, T] {
+	return Resp(200, "ok", data)
 }
 
 // GetPageList 获取分页
@@ -151,25 +230,25 @@ func (c *SimpleCrudController[E, T]) InsertOrUpdate(ctx *fw.Context, body T) {
 	for col, value := range m {
 		db = db.Where(col, value)
 	}
-	var ex int64
-	db.Model(new(T)).Count(&ex)
-	if ex > 0 {
-		ctx.JSON(400, map[string]interface{}{
-			"code":    400,
-			"message": "已存在",
-			"data":    nil,
-		})
-		return
-	}
 
 	var err error
 	if _, ok := body.GetID(); ok {
-		err = c.DB.Model(body).Updates(body).Error
+		err = c.DB.Model(body).Select("*").Omit("created_at", "updated_at", "deleted_at").Updates(body).Error
 	} else {
+		var ex int64
+		db.Model(new(T)).Count(&ex)
+		if ex > 0 {
+			ctx.JSON(200, map[string]interface{}{
+				"code":    400,
+				"message": "已存在",
+				"data":    nil,
+			})
+			return
+		}
 		err = c.DB.Create(body).Error
 	}
 	if err != nil {
-		ctx.JSON(500, map[string]interface{}{
+		ctx.JSON(200, map[string]interface{}{
 			"code":    500,
 			"message": err.Error(),
 			"data":    nil,

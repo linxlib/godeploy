@@ -28,3 +28,4 @@ backend/tmp
 backend/main
 backend/openapi.yaml
 backend/openapi.yaml.fasthttp.gz
+backend/godeploy

@@ -132,10 +132,11 @@ type SignUpRequest struct {
 
 // SignUp 注册
 // @POST /signUp
+// @Ignore Session
 func (u *UserController) SignUp(ctx *fw.Context, req *SignUpRequest) {
 	//panic("ss")
 	var user = new(models.User)
-	if err := u.DB.Where("Name=?", req.Username).Or("Email=?", req.Email).First(user).Error; err != nil {
+	if err := u.DB.Where("name=?", req.Username).Or("email=?", req.Email).First(user).Error; err != nil {
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			ctx.JSON(500, map[string]interface{}{
 				"code":    500,
