@@ -20,7 +20,7 @@ onMounted(() => {
     fitAddon.fit();
 
     // Example: Writing to the terminal
-    xterm.write('\x1b[31mWelcome to the xterm.js terminal!\x1b[0m\r\n');
+    //xterm.write('\x1b[31mWelcome to the xterm.js terminal!\x1b[0m\r\n');
 
     // Handle window resize
     window.addEventListener('resize', () => fitAddon.fit());

@@ -208,3 +208,14 @@ func (u *UserController) UploadAvatar(ctx *fw.Context, req *UploadFormRequest) {
 		}))
 
 }
+
+// Profile
+// @GET /profile
+func (u *UserController) Profile(ctx *fw.Context, store *session.Store) {
+	if conv.Uint(u.CurrentUserID(store)) > 0 {
+		user := &models.User{}
+		u.DB.Model(new(models.User)).Where("id = ?", u.CurrentUserID(store)).First(user)
+
+		ctx.JSON(200, base.Resp(200, "ok", user))
+	}
+}

@@ -1,6 +1,10 @@
 package controllers
 
-import "github.com/linxlib/fw"
+import (
+	"github.com/gookit/goutil/fsutil"
+	"github.com/linxlib/conv"
+	"github.com/linxlib/fw"
+)
 
 const html = `<!DOCTYPE html>
 <html lang='en'>
@@ -30,6 +34,13 @@ func (h *HomeController) Index(ctx *fw.Context) {
 	ctx.HTMLPure(200, html, map[string]interface{}{
 		"version": "1.0",
 	})
+}
+
+// CheckFileExists
+// @GET /check_file
+func (h *HomeController) CheckFileExists(ctx *fw.Context) {
+	a := fsutil.FileExist("/root/下载.png")
+	ctx.String(200, conv.String(a))
 }
 
 // Websocket

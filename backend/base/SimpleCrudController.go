@@ -43,6 +43,13 @@ func (c *SimpleCrudController[E, T]) CheckSession(store *session.Store) bool {
 	return store.Get("user_id") != nil
 }
 
+func (c *SimpleCrudController[E, T]) CurrentUserID(store *session.Store) any {
+	if store == nil {
+		return *new(E)
+	}
+	return store.Get("user_id")
+}
+
 // SetAuthed sets the provided data into the session store.
 //
 // Parameters:

@@ -158,20 +158,21 @@
     </a-flex>
   </a-modal>
 
-  <a-modal v-model:open="deployModalOpen" :title="modelDeploy.deployTitle" okText="部署" cancelText="取消">
+  <a-modal v-model:open="deployModalOpen" :title="modelDeploy.deployTitle" :ok-button-props="{ disabled: true }" cancelText="取消">
     <a-flex vertical gap="middle">
       <a-flex horizontal gap="middle">
         <a-select v-model:value="modelDeploy.deployType" size="middle" style="min-width: 150px;">
-          <a-select-option value="files">文件选择</a-select-option>
-          <a-select-option value="dir">目录</a-select-option>
-          <a-select-option value="zip">压缩包</a-select-option>
+          <a-select-option value="文件">文件</a-select-option>
+          <a-select-option value="目录">目录</a-select-option>
+          <a-select-option value="zip压缩包">压缩包</a-select-option>
         </a-select>
+        <a-button @click="deploy">选择{{modelDeploy.deployType}}部署</a-button>
         <input type="file" id="dir-selector" hidden @change="selectA" webkitdirectory directory multiple />
-        <input type="file" id="file-selector" hidden @change="selectA" webkitfile />
+        <input type="file" id="file-selector" hidden @change="selectB" webkitfile />
         <input type="file" id="multifile-selector" hidden @change="selectA" webkitfile multiple />
       </a-flex>
-      <a-textarea v-model:value="modelDeploy.paths"></a-textarea>
-      <a-button @click="deploy">部署</a-button>
+      <a-textarea v-model:value="modelDeploy.paths" :rows="5"></a-textarea>
+      
       <TerminalComponent ref="terminal" v-if="showTerminal" />
       
     </a-flex>
@@ -184,7 +185,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { onMounted, ref } from 'vue'
-import { showError,showSuccess,msgSuccess } from '@/utils/notification'
+import { showError,showSuccess,msgSuccess, msgInfo } from '@/utils/notification'
 import type { TreeProps,SelectProps  } from 'ant-design-vue'
 import dayjs from 'dayjs'
 import {
@@ -199,11 +200,13 @@ import {
 } from '@ant-design/icons-vue'
 import JSZip from 'jszip'
 import {SparkMD5} from 'spark-md5';
+import iconv from 'iconv-lite'
 import {apiFetch} from '@/utils/ofetch'
 import TerminalComponent from '@/components/TerminalComponent.vue'
 import { Terminal } from '@xterm/xterm'
 const terminal = ref<any>(null)
 const showTerminal = ref(false)
+import { saveAs } from 'file-saver'
 
 
 
@@ -212,6 +215,36 @@ const data = ref([])
 
 const router = useRouter()
 const treeData = ref<TreeProps['treeData']>([])
+
+const onLoadData: TreeProps['loadData'] = (treeNode) => {
+  return new Promise<void>((resolve) => {
+    if (treeNode.isLeaf) {
+      resolve()
+      return
+    }
+    apiFetch('/api/service/dir_tree', {
+      method: 'GET',
+      query: {
+        home: treeNode.key
+      },
+    }).then((resp) => {
+      //插入子目录到对应的位置
+      
+      let a = resp.data.map((r:any) => {
+        return {
+          title: r.path,
+          key: r.path,
+          pathType: r.info.is_dir,
+          isLeaf: !r.info.is_dir
+        }
+      })
+      treeNode.dataRef.children = a
+      treeData.value = [...treeData.value]
+      resolve()
+    })
+  })
+}
+
 const viewFolderOpen = ref(false)
 const viewFolderTitle = ref('目录查看')
 const curPath = ref('')
@@ -253,8 +286,9 @@ const iisList = ref([])
 const viewIISListOpen = ref(false)
 const deployModalOpen = ref(false)
 const modelDeploy = ref<any>({
-  deployType:'files',
-  paths:'9999',
+  deployType:'文件',
+  deployTypeName: '文件',
+  paths:'',
   deployTitle:'部署服务-',
   model:{}
 })
@@ -266,27 +300,71 @@ function writeToTerminal(data: any) {
     xterm.writeln(data)
   }
 }
+async function selectB(e:any) {
+  console.log(e.target.files)
+  const files:FileList = e.target.files
+  modelDeploy.value.paths = files[0].name
+  doDeploy(files[0])
 
+}
+
+async function startDeploy(id:number) {
+  showTerminal.value = true
+  let eventSource = new EventSource('http://10.10.0.21:3058/api/deploy/sse?id='+id)
+  eventSource.onmessage = (event)=>{
+    writeToTerminal(event.data)
+    if (event.data==='done') {
+       setTimeout(()=>{
+        showTerminal.value =  false
+        modelDeploy.value.paths = ''
+        showSuccess('部署完成')
+       },2000)
+    }
+  }
+  eventSource.onerror = (event:any) =>{
+    console.log(event)
+    eventSource.close()
+    writeToTerminal(event)
+  }
+
+}
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 async function selectA(e:any) {
   console.log(e)
   const files:FileList = e.target.files
+  
   if (files.length >=1) {
-    //modelDeploy.value.paths = files[0] + files[0].name
+    msgInfo('正在压缩...')
     for (const file of files) {
-      const fileContent = await file.text();
-      zip.file(file.name, fileContent);
+      modelDeploy.value.paths += file.name + '\n'
+      console.log(file.name)
+      console.log(iconv.encode(file.name,'utf8').toString())
+      zip.file( iconv.encode(file.name,'utf8').toString(), file);
     }
-
-    zip.generateAsync({type:"blob"})
+    await sleep(2000)
+    zip.generateAsync({
+      type:"blob"
+    })
       .then((content)=> {
+        //saveAs(content,'hello.zip')
+        
         doDeploy(content)
       });
-
-
 
   }
 
   
+}
+function convertToUtf8String(str: string): string {
+  // Encode the string into UTF-8 bytes
+  const utf8Bytes = new TextEncoder().encode(str);
+
+  // Decode the UTF-8 bytes back into a string
+  const utf8String = new TextDecoder('utf-8').decode(utf8Bytes);
+
+  return utf8String;
 }
 function formatServiceType(st: number) {
   switch (st) {
@@ -308,16 +386,19 @@ function formatServiceType(st: number) {
 
 async function doDeploy(content:any) {
   const formData = new FormData();
-  let h = SparkMD5.hash(content)
+  //let h = SparkMD5.hash(content)
   formData.append("file", content);
-  formData.append("hash", h);
-  formData.append("size", content.length);
+  //formData.append("hash", h);
+  //formData.append("size", content.length);
   formData.append("serviceId", modelDeploy.value.model.ID);
-   apiFetch('/api/Deploy/Deploy',{
+   apiFetch('/api/deploy',{
     method: 'POST',
+     
     body: formData,
    }).then(resp=>{
     console.log(resp)
+    startDeploy(resp.data)
+  
    })
 }
 
@@ -331,11 +412,11 @@ function serviceManageClick() {
 
 function deploy() {
   console.log('doOpenSelect',modelDeploy.value)
-  if (modelDeploy.value.deployType=='files') {
+  if (modelDeploy.value.deployType=='文件') {
      document.getElementById('multifile-selector')?.click();
-  } else if (modelDeploy.value.deployType == 'dir') {
+  } else if (modelDeploy.value.deployType == '目录') {
     document.getElementById('dir-selector')?.click();
-  } else if (modelDeploy.value.deployType=='zip') {
+  } else if (modelDeploy.value.deployType=='zip压缩包') {
     document.getElementById('file-selector')?.setAttribute('accept','.zip')
     document.getElementById('file-selector')?.click();
   }
@@ -401,33 +482,7 @@ function updateService() {
 
 }
 
-const onLoadData: TreeProps['loadData'] = (treeNode) => {
-  return new Promise<void>((resolve) => {
-    if (treeNode.isLeaf) {
-      resolve()
-      return
-    }
-    apiFetch('/api/service/dir_tree', {
-      method: 'GET',
-      query: {
-        home: treeNode.key
-      },
-    }).then((resp) => {
-      //插入子目录到对应的位置
-      let a = resp.data.map((r:any) => {
-        return {
-          title: r.info.name,
-          key: r.path,
-          pathType: r.info.is_dir,
-          isLeaf: !r.info.is_dir
-        }
-      })
-      treeNode.dataRef.children = a
-      treeData.value = [...treeData.value]
-      resolve()
-    })
-  })
-}
+
 
 
 
@@ -570,7 +625,7 @@ function viewFolder(path: string, isSel: boolean = false) {
     curPath.value = path
     treeData.value = resp.data.map((r: any) => {
       return {
-        title: r.info.name,
+        title: r.path,
         key: r.path,
         pathType: r.info.is_dir,
         isLeaf: !r.info.is_dir

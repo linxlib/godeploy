@@ -47,6 +47,17 @@ func (c *DeployController) Deploy(ctx *fw.Context, req *DeployFormRequest, db *g
 		}
 		return
 	}
+	if f, err := req.File.Open(); err != nil {
+		ctx.JSON(500, map[string]interface{}{
+			"code":    500,
+			"message": err.Error(),
+			"data":    nil,
+		})
+		return
+	} else {
+		f.Close()
+	}
+
 	id := deploy.CreateNewDeploy(&req.File, service, db)
 	ctx.JSON(200, map[string]interface{}{
 		"code": 200,
@@ -83,8 +94,8 @@ func (c *DeployController) SSE(ctx *fw.Context, req *SSEReq) {
 		for {
 			select {
 			case e := <-ch:
-				log.Println("write data:", e.Message)
-				_, err := fmt.Fprintf(w, "data: %s\n\n", e.Message)
+				log.Println("write data:", e.ID, e.Message)
+				_, err := fmt.Fprintf(w, "data: %d %s\n\n", e.ID, e.Message)
 				if err != nil {
 					log.Println("write data:", err)
 					continue

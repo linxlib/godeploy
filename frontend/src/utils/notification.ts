@@ -7,6 +7,9 @@ export const msgSuccess = (msg:string) => {
 export const msgError = (msg:string) => {
     message.error(msg)
 }
+export const msgInfo = (msg:string) => {
+  message.info(msg)
+}
 
 export const showError = (message: string) => {
     notification.open({

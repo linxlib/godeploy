@@ -13,7 +13,7 @@ type User struct {
 	Name          string `gorm:"type:varchar(255);unique_index;not null" validate:"required"`
 	Email         string `gorm:"type:varchar(255);unique_index;not null" validate:"email"`
 	Avatar        string `gorm:"type:varchar(255)"`
-	Password      string `gorm:"type:varchar(255);not null"`
+	Password      string `gorm:"type:varchar(255);not null" json:"-"`
 	IsAdmin       bool   `gorm:"type:boolean;not null"`
 	Enabled       bool   `gorm:"type:boolean;not null"`
 	LastLoginTime time.Time

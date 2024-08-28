@@ -11,6 +11,7 @@ package dir_tree
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -56,6 +57,9 @@ func NewDirList(root string) ([]*Node1, error) {
 		return nil, err
 	}
 	for _, file := range ds {
+		if strings.HasPrefix(file.Name(), ".") {
+			continue
+		}
 		node := &Node1{
 			FullPath: "",
 			Info:     nil,

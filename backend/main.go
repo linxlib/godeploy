@@ -26,7 +26,7 @@ func main() {
 	s.Use(middlewares2.NewStaticMiddleware())
 	s.Use(middlewares.NewWebsocketMiddleware())
 	//s.Use(middlewares.NewWebsocketHubMiddleware())
-	s.Use(middlewares.NewLoggerMiddleware(nil))
+	s.Use(middlewares.NewLoggerMiddleware())
 	s.Use(middlewares.NewDefaultCorsMiddleware())
 	s.Use(weblog.NewWebLogMiddleware())
 	s.Use(middlewares.NewServerDownMiddleware())

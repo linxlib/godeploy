@@ -2,6 +2,7 @@ package deploy
 
 import (
 	"context"
+	"fmt"
 	"github.com/linxlib/godeploy/controllers/models"
 	"github.com/saracen/fastzip"
 	"gorm.io/gorm"
@@ -40,6 +41,7 @@ func run() {
 					messageRoutine <- Message{ID: id, Message: "开始部署"}
 					f, err := data.file.Open()
 					if err != nil {
+						fmt.Println(data.file.Filename, data.file.Size)
 						messageRoutine <- Message{ID: id, Message: err.Error()}
 						continue
 					}
@@ -56,6 +58,9 @@ func run() {
 						continue
 					}
 					//time.Sleep(time.Second * 1)
+					for _, file := range reader.Files() {
+						messageRoutine <- Message{ID: id, Message: file.Name}
+					}
 					err = reader.Extract(context.Background())
 					if err != nil {
 						messageRoutine <- Message{ID: id, Message: err.Error()}
